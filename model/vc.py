@@ -18,39 +18,6 @@ from model.utils import sequence_mask, fix_len_compatibility, mse_loss
 from conformer_ppg_model.build_ppg_model import load_ppg_model
 
 
-# "average voice" encoder as the module parameterizing the diffusion prior
-class FwdDiffusion(BaseModule):
-    def __init__(self, n_feats, channels, filters, heads, layers, kernel, 
-                 dropout, window_size, dim):
-        super(FwdDiffusion, self).__init__()
-        self.n_feats = n_feats
-        self.channels = channels
-        self.filters = filters
-        self.heads = heads
-        self.layers = layers
-        self.kernel = kernel
-        self.dropout = dropout
-        self.window_size = window_size
-        self.dim = dim
-        self.encoder = MelEncoder(n_feats, channels, filters, heads, layers, 
-                                  kernel, dropout, window_size)
-        self.postnet = PostNet(dim)
-
-    @torch.no_grad()
-    def forward(self, x, mask):
-        x, mask = self.relocate_input([x, mask])
-        z = self.encoder(x, mask)
-        z_output = self.postnet(z, mask)
-        return z_output
-
-    def compute_loss(self, x, y, mask):
-        x, y, mask = self.relocate_input([x, y, mask])
-        z = self.encoder(x, mask)
-        z_output = self.postnet(z, mask)
-        loss = mse_loss(z_output, y, mask, self.n_feats)
-        return loss
-
-
 # the whole voice conversion model consisting of the "average voice" encoder 
 # and the diffusion-based speaker-conditional decoder
 class DiffVC(BaseModule):
