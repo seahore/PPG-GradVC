@@ -60,6 +60,8 @@ if __name__ == '__main__':
             mel_speaker_dir.mkdir(parents=True, exist_ok=True)
             embed_speaker_dir.mkdir(parents=True, exist_ok=True)
             mel_path = mel_speaker_dir.joinpath(wav_file.name.split('.')[0]+'_mel.npy')
-            np.save(mel_path, get_mel(wav_file))
+            if not mel_path.exists():
+                np.save(mel_path, get_mel(wav_file))
             embed_path = embed_speaker_dir.joinpath(wav_file.name.split('.')[0]+'_embed.npy')
-            np.save(embed_path, get_embed(wav_file))
+            if not embed_path.exists():
+                np.save(embed_path, get_embed(wav_file))
