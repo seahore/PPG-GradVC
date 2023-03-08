@@ -5,13 +5,19 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 # MIT License for more details.
+# 
+# Edit by Annon Tan, 2023/3/8
 
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.io import wavfile
+from pathlib import Path
 
 
 def save_plot(tensor, savepath):
+    savepath = Path(savepath)
+    if not savepath.parent.exists():
+        savepath.parent.mkdir()
     plt.style.use('default')
     fig, ax = plt.subplots(figsize=(12, 3))
     im = ax.imshow(tensor, aspect="auto", origin="lower", interpolation='none')

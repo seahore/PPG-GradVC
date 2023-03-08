@@ -136,13 +136,13 @@ if __name__ == "__main__":
                 mel_lengths = torch.LongTensor([mel.shape[-1]]).cuda()
                 ppg, mel_rec = model(wav, mel, mel_lengths, mel, mel_lengths, c, n_timesteps=100)
                 if epoch == save_every:
-                    save_plot(mel.squeeze().cpu(), f'{log_dir}/original_{i}.png')
-                    save_plot(ppg.squeeze().cpu(), f'{log_dir}/ppg_{i}.png')
+                    save_plot(mel.squeeze().cpu(), f'{log_dir}/original/original_{i}.png')
+                    save_plot(ppg.squeeze().cpu(), f'{log_dir}/ppg/ppg_{i}.png')
                     audio = fgl(mel)
-                    save_audio(f'{log_dir}/original_{i}.wav', sampling_rate, audio)
-                save_plot(mel_rec.squeeze().cpu(), f'{log_dir}/reconstructed_{i}_{epoch}.png')
+                    save_audio(f'{log_dir}/original/original_{i}.wav', sampling_rate, audio)
+                save_plot(mel_rec.squeeze().cpu(), f'{log_dir}/reconstructed/reconstructed_{i}_e{epoch}.png')
                 audio = fgl(mel_rec)
-                save_audio(f'{log_dir}/reconstructed_{i}_{epoch}.wav', sampling_rate, audio)
+                save_audio(f'{log_dir}/reconstructed/reconstructed_{i}_e{epoch}.wav', sampling_rate, audio)
 
         print('Saving model...\n')
         ckpt = model.module.state_dict()
