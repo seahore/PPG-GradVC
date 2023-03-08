@@ -132,3 +132,5 @@ logs_dec/
 dataset/wavs/*
 dataset/mels/*
 dataset/embeds/*
+
+.vscode/

@@ -77,6 +77,7 @@ class Stft(torch.nn.Module):
                 pad_mode=self.pad_mode,
                 normalized=self.normalized,
                 onesided=self.onesided,
+                return_complex=False,
             )
         else:
             # NOTE(sx): Use Kaldi-fasion padding, maybe wrong
@@ -91,6 +92,7 @@ class Stft(torch.nn.Module):
                 pad_mode=self.pad_mode,
                 normalized=self.normalized,
                 onesided=self.onesided,
+                return_complex=False,
             )
 
         # output: (Batch, Freq, Frames, 2=real_imag)

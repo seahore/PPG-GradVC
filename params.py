@@ -8,10 +8,10 @@
 
 # data parameters
 n_mels = 80
-sampling_rate = 22050
-# sampling_rate = 16000
+# sampling_rate = 22050
+sampling_rate = 16000
 n_fft = 1024
-hop_size = 256
+hop_size = 160
 
 # "average voice" encoder parameters
 channels = 192
@@ -32,5 +32,5 @@ beta_max = 20.0
 
 # training parameters
 seed = 37
-test_size = 1
+test_size = 64
 train_frames = 128

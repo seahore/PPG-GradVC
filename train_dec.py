@@ -42,7 +42,7 @@ beta_max = params.beta_max
 random_seed = params.seed
 test_size = params.test_size
 
-data_dir = 'dataset'
+data_dir = 'D:\\Workspace\\Datasets\\LibriSpeech\\train-little-test'
 val_file = 'filelists/valid.txt'
 exc_file = 'filelists/exceptions.txt'
 
@@ -72,10 +72,12 @@ if __name__ == "__main__":
     model = DiffVC(n_mels, channels, filters, heads, layers, kernel, 
                    dropout, window_size, enc_dim, spk_dim, use_ref_t, 
                    dec_dim, beta_min, beta_max).cuda()
+    # model.load_state_dict(torch.load('checkpts/vc/vc_25.pt'))
     model.load_encoder(
         './conformer_ppg_model/en_conformer_ctc_att/config.yaml', 
         './conformer_ppg_model/en_conformer_ctc_att/24epoch.pth'
     )
+    print(f'Number of parameters: {model.nparams}')
 
     # print('Encoder:')
     # print(model.encoder)
@@ -86,6 +88,11 @@ if __name__ == "__main__":
 
     print('Initializing optimizers...')
     optimizer = torch.optim.Adam(params=model.decoder.parameters(), lr=learning_rate)
+
+    print('Enabling multi-GPU training...')
+    device_count = torch.cuda.device_count()
+    print(f'Number of GPU devices: {device_count}')
+    model = torch.nn.DataParallel(model, device_ids=range(device_count))
 
     print('Start training.')
     torch.backends.cudnn.benchmark = True
@@ -99,9 +106,9 @@ if __name__ == "__main__":
             mel, mel_ref = batch['mel1'].cuda(), batch['mel2'].cuda()
             c, mel_lengths = batch['c'].cuda(), batch['mel_lengths'].cuda()
             model.zero_grad()
-            loss = model.compute_loss(wav, mel, mel_lengths, mel_ref, c)
+            loss = model.module.compute_loss(wav, mel, mel_lengths, mel_ref, c)
             loss.backward()
-            torch.nn.utils.clip_grad_norm_(model.decoder.parameters(), max_norm=1)
+            torch.nn.utils.clip_grad_norm_(model.module.decoder.parameters(), max_norm=1)
             optimizer.step()
             losses.append(loss.item())
             iteration += 1
@@ -133,10 +140,10 @@ if __name__ == "__main__":
                     save_plot(ppg.squeeze().cpu(), f'{log_dir}/ppg_{i}.png')
                     audio = fgl(mel)
                     save_audio(f'{log_dir}/original_{i}.wav', sampling_rate, audio)
-                save_plot(mel_rec.squeeze().cpu(), f'{log_dir}/reconstructed_{i}.png')
+                save_plot(mel_rec.squeeze().cpu(), f'{log_dir}/reconstructed_{i}_{epoch}.png')
                 audio = fgl(mel_rec)
-                save_audio(f'{log_dir}/reconstructed_{i}.wav', sampling_rate, audio)
+                save_audio(f'{log_dir}/reconstructed_{i}_{epoch}.wav', sampling_rate, audio)
 
         print('Saving model...\n')
-        ckpt = model.state_dict()
+        ckpt = model.module.state_dict()
         torch.save(ckpt, f=f"{log_dir}/vc_{epoch}.pt")

@@ -51,7 +51,8 @@ class PseudoInversion(BaseModule):
         self.n_mels = n_mels
         self.sampling_rate = sampling_rate
         self.n_fft = n_fft
-        mel_basis = librosa_mel_fn(sampling_rate, n_fft, n_mels, 0, 8000)
+        mel_basis = librosa_mel_fn(sr=sampling_rate, n_fft=n_fft,
+                                   n_mels=n_mels, fmin=0, fmax=8000)
         mel_basis_inverse = np.linalg.pinv(mel_basis)
         mel_basis_inverse = torch.from_numpy(mel_basis_inverse).float()
         self.register_buffer("mel_basis_inverse", mel_basis_inverse)
@@ -104,7 +105,7 @@ class FastGL(BaseModule):
         for _ in range(n_iters):        
             s = torch.stft(x, n_fft=self.n_fft, hop_length=self.hop_size, 
                            win_length=self.n_fft, window=self.window, 
-                           center=True)
+                           center=True, return_complex=False)
             real_part, imag_part = s.unbind(-1)
             stftm = torch.sqrt(torch.clamp(real_part**2 + imag_part**2, min=1e-8))
             angles = s / stftm.unsqueeze(-1)

@@ -64,8 +64,8 @@ def wav_to_mel_spectrogram(wav):
     Note: this not a log-mel spectrogram.
     """
     frames = librosa.feature.melspectrogram(
-        wav,
-        sampling_rate,
+        y=wav,
+        sr=sampling_rate,
         n_fft=int(sampling_rate * mel_window_length / 1000),
         hop_length=int(sampling_rate * mel_window_step / 1000),
         n_mels=mel_n_channels
@@ -79,10 +79,10 @@ def wav_to_mel_spectrogram_batch(wavs):
     hop_length = int(sampling_rate * mel_window_step / 1000)
     win_length = int(sampling_rate * mel_window_length / 1000)
     window = torch.hann_window(n_fft).to(wavs)
-    mel_basis = torch.from_numpy(librosa_mel_fn(sampling_rate, n_fft, 
-                                                mel_n_channels)).to(wavs)
-    s = torch.stft(wavs, n_fft=n_fft, hop_length=hop_length, 
-                   win_length=win_length, window=window, center=True)
+    mel_basis = torch.from_numpy(librosa_mel_fn(sr=sampling_rate, n_fft=n_fft, 
+                                                n_mels=mel_n_channels)).to(wavs)
+    s = torch.stft(wavs, n_fft=n_fft, hop_length=hop_length, win_length=win_length,
+                   window=window, center=True, return_complex=False)
     real_part, imag_part = s.unbind(-1)
     stftm = real_part**2 + imag_part**2
     mels = torch.matmul(mel_basis, stftm)
