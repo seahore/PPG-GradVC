@@ -41,9 +41,9 @@ def get_embed(wav_path):
     return embed
 
 if __name__ == '__main__':
-    wav_dir = pathlib.Path('D:\\Workspace\\Datasets\\UnifiedDataset\\wavs')
-    mel_dir = pathlib.Path('D:\\Workspace\\Datasets\\UnifiedDataset\\mels')
-    embed_dir = pathlib.Path('D:\\Workspace\\Datasets\\UnifiedDataset\\embeds')
+    wav_dir = pathlib.Path('../UnifiedDataset/wavs')
+    mel_dir = pathlib.Path('../UnifiedDataset/mels')
+    embed_dir = pathlib.Path('../UnifiedDataset/embeds')
 
     speakers = []
     for sub in wav_dir.iterdir():

@@ -42,7 +42,7 @@ class DiffVC(BaseModule):
         self.dec_dim = dec_dim
         self.beta_min = beta_min
         self.beta_max = beta_max
-        # self.encoder = PPGModel()
+        self.encoder = None
         self.decoder = Diffusion(n_feats, dec_dim, spk_dim, use_ref_t, 
                                  beta_min, beta_max)
 

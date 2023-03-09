@@ -134,3 +134,5 @@ dataset/mels/*
 dataset/embeds/*
 
 .vscode/
+
+checkpts/vc/vc_*.pt

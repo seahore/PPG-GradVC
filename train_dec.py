@@ -43,7 +43,6 @@ beta_max = params.beta_max
 random_seed = params.seed
 test_size = params.test_size
 
-data_dir = 'D:\\Workspace\\Datasets\\UnifiedDataset'
 val_file = 'filelists/valid.txt'
 exc_file = 'filelists/exceptions.txt'
 
@@ -54,12 +53,14 @@ learning_rate = 1e-4
 
 if __name__ == "__main__":
     parser = ArgumentParser()
-    parser.add_argument('-d', '--decoder-path', help='The path to the decoder model saved file.')
+    parser.add_argument('-d', '--data-dir', required=True, help='The directory the datasets located in.')
+    parser.add_argument('-p', '--decoder-path', help='The path to the decoder model saved file.')
     parser.add_argument('-e', '--epochs', type=int, default=100, help='How many epochs will the training process go through.')
     parser.add_argument('--epoch-start', type=int, default=1, help='The number epoch counting will start from.')
     parser.add_argument('-b', '--batch-size', type=int, default=16, help='The batch size.')
     parser.add_argument('-s', '--save-every', type=int, default=1, help='Save the decoder every n epochs.')
     args = parser.parse_args()
+    data_dir = args.data_dir
     decoder_path = args.decoder_path
     epochs = args.epochs
     epoch_start = args.epoch_start
@@ -157,5 +158,8 @@ if __name__ == "__main__":
                 save_audio(f'{log_dir}/reconstructed/reconstructed_{i}_e{epoch}.wav', sampling_rate, audio)
 
         print('Saving model...\n')
+        encoder_exclude = model.module.encoder
+        model.module.encoder = None
         ckpt = model.module.state_dict()
         torch.save(ckpt, f=f"{log_dir}/vc_{epoch}.pt")
+        model.module.encoder = encoder_exclude
