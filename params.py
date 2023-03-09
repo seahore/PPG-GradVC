@@ -32,5 +32,5 @@ beta_max = 20.0
 
 # training parameters
 seed = 37
-test_size = 16
+test_size = 8
 train_frames = 128
