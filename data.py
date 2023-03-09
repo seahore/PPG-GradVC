@@ -45,7 +45,7 @@ class VCDecDataset(torch.utils.data.Dataset):
         self.valid_ids = set([v.strip() + '_mel.npy' for v in valid_ids])
         self.exceptions += self.valid_ids
 
-        self.valid_info = [(v.split('_')[0], v.split('-')[0]) for v in self.valid_ids]
+        self.valid_info = [(v[:-8], v.split('-')[0]) for v in self.valid_ids]
         self.train_info = []
         for spk in self.speakers:
             mel_ids = os.listdir(os.path.join(self.mel_dir, spk))
