@@ -9,6 +9,7 @@
 import os
 import numpy as np
 from tqdm import tqdm
+from argparse import ArgumentParser
 
 import torch
 from torch.utils.data import DataLoader
@@ -42,19 +43,29 @@ beta_max = params.beta_max
 random_seed = params.seed
 test_size = params.test_size
 
-data_dir = 'D:\\Workspace\\Datasets\\LibriSpeech\\train-little-test'
+data_dir = 'D:\\Workspace\\Datasets\\UnifiedDataset'
 val_file = 'filelists/valid.txt'
 exc_file = 'filelists/exceptions.txt'
 
 log_dir = 'logs_dec'
 enc_dir = 'logs_enc'
-epochs = 110
-batch_size = 16
 learning_rate = 1e-4
-save_every = 1
 
 
 if __name__ == "__main__":
+    parser = ArgumentParser()
+    parser.add_argument('-d', '--decoder-path', help='The path to the decoder model saved file.')
+    parser.add_argument('-e', '--epochs', type=int, default=100, help='How many epochs will the training process go through.')
+    parser.add_argument('--epoch-start', type=int, default=1, help='The number epoch counting will start from.')
+    parser.add_argument('-b', '--batch-size', type=int, default=16, help='The batch size.')
+    parser.add_argument('-s', '--save-every', type=int, default=1, help='Save the decoder every n epochs.')
+    args = parser.parse_args()
+    decoder_path = args.decoder_path
+    epochs = args.epochs
+    epoch_start = args.epoch_start
+    batch_size = args.batch_size
+    save_every = args.save_every
+        
 
     torch.manual_seed(random_seed)
     np.random.seed(random_seed)
@@ -72,7 +83,8 @@ if __name__ == "__main__":
     model = DiffVC(n_mels, channels, filters, heads, layers, kernel, 
                    dropout, window_size, enc_dim, spk_dim, use_ref_t, 
                    dec_dim, beta_min, beta_max).cuda()
-    # model.load_state_dict(torch.load('checkpts/vc/vc_25.pt'))
+    if decoder_path is not None:
+        model.load_state_dict(torch.load(decoder_path))
     model.load_encoder(
         './conformer_ppg_model/en_conformer_ctc_att/config.yaml', 
         './conformer_ppg_model/en_conformer_ctc_att/24epoch.pth'
@@ -97,7 +109,7 @@ if __name__ == "__main__":
     print('Start training.')
     torch.backends.cudnn.benchmark = True
     iteration = 0
-    for epoch in range(1, epochs + 1):
+    for epoch in range(epoch_start, epochs + epoch_start):
         print(f'Epoch: {epoch} [iteration: {iteration}]')
         model.train()
         losses = []
