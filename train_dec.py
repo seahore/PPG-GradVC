@@ -13,6 +13,7 @@ from argparse import ArgumentParser
 
 import torch
 from torch.utils.data import DataLoader
+from torch.utils.data.distributed import DistributedSampler
 
 import params
 from data import VCDecDataset, VCDecBatchCollate
@@ -53,6 +54,7 @@ learning_rate = 1e-4
 
 if __name__ == "__main__":
     parser = ArgumentParser()
+    parser.add_argument('--local_rank', type=int) # For DDP
     parser.add_argument('-d', '--data-dir', required=True, help='The directory the datasets located in.')
     parser.add_argument('-p', '--decoder-path', help='The path to the decoder model saved file.')
     parser.add_argument('-e', '--epochs', type=int, default=100, help='How many epochs will the training process go through.')
@@ -73,22 +75,31 @@ if __name__ == "__main__":
 
     os.makedirs(log_dir, exist_ok=True)
 
+    print('Setting GPU devices...')
+    local_rank = args.local_rank
+    torch.distributed.init_process_group(backend='gloo')
+    torch.cuda.set_device(local_rank)
+    device = torch.device('cuda', local_rank)
+
     print('Initializing data loaders...')
     train_set = VCDecDataset(data_dir, val_file, exc_file)
     collate_fn = VCDecBatchCollate()
-    train_loader = DataLoader(train_set, batch_size=batch_size, 
+    train_sampler = DistributedSampler(train_set)
+    train_loader = DataLoader(train_set, batch_size=batch_size, sampler=train_sampler,
                               collate_fn=collate_fn, num_workers=4, drop_last=True)
 
     print('Initializing and loading models...')
     fgl = FastGL(n_mels, sampling_rate, n_fft, hop_size).cuda()
     model = DiffVC(n_mels, channels, filters, heads, layers, kernel, 
                    dropout, window_size, enc_dim, spk_dim, use_ref_t, 
-                   dec_dim, beta_min, beta_max).cuda()
+                   dec_dim, beta_min, beta_max)
     if decoder_path is not None:
-        model.load_state_dict(torch.load(decoder_path))
+        checkpt = torch.load(decoder_path, map_location='cpu')
+        model.load_state_dict(checkpt['state_dict'])
     model.load_encoder(
         './conformer_ppg_model/en_conformer_ctc_att/config.yaml', 
-        './conformer_ppg_model/en_conformer_ctc_att/24epoch.pth'
+        './conformer_ppg_model/en_conformer_ctc_att/24epoch.pth',
+        'cpu'
     )
     print(f'Number of parameters: {model.nparams}')
 
@@ -101,17 +112,23 @@ if __name__ == "__main__":
 
     print('Initializing optimizers...')
     optimizer = torch.optim.Adam(params=model.decoder.parameters(), lr=learning_rate)
+    if decoder_path is not None:
+        optimizer.load_state_dict(checkpt['optim'])
 
     print('Enabling multi-GPU training...')
     device_count = torch.cuda.device_count()
     print(f'Number of GPU devices: {device_count}')
-    model = torch.nn.DataParallel(model, device_ids=range(device_count))
+    model.to(device)
+    model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[local_rank],
+                                                      output_device=local_rank,
+                                                      find_unused_parameters=True)
 
     print('Start training.')
     torch.backends.cudnn.benchmark = True
     iteration = 0
     for epoch in range(epoch_start, epochs + epoch_start):
         print(f'Epoch: {epoch} [iteration: {iteration}]')
+        train_loader.sampler.set_epoch(epoch) # Shuffle data
         model.train()
         losses = []
         for batch in tqdm(train_loader, total=len(train_set)//batch_size):
@@ -133,33 +150,37 @@ if __name__ == "__main__":
             f.write(msg)
         losses = []
 
-        if epoch % save_every > 0:
-            continue
+        if local_rank == 0: # Eval on the cuda:0 GPU
+            if epoch % save_every > 0:
+                continue
 
-        model.eval()
-        print('Inference...\n')
-        with torch.no_grad():
-            mels = train_set.get_valid_dataset()
-            for i, (wav, mel, c) in enumerate(mels):
-                if i >= test_size:
-                    break
-                wav = wav.unsqueeze(0).float().cuda()
-                mel = mel.unsqueeze(0).float().cuda()
-                c = c.unsqueeze(0).float().cuda()
-                mel_lengths = torch.LongTensor([mel.shape[-1]]).cuda()
-                ppg, mel_rec = model(wav, mel, mel_lengths, mel, mel_lengths, c, n_timesteps=100)
-                if epoch == save_every:
-                    save_plot(mel.squeeze().cpu(), f'{log_dir}/original/original_{i}.png')
-                    save_plot(ppg.squeeze().cpu(), f'{log_dir}/ppg/ppg_{i}.png')
-                    audio = fgl(mel)
-                    save_audio(f'{log_dir}/original/original_{i}.wav', sampling_rate, audio)
-                save_plot(mel_rec.squeeze().cpu(), f'{log_dir}/reconstructed/reconstructed_{i}_e{epoch}.png')
-                audio = fgl(mel_rec)
-                save_audio(f'{log_dir}/reconstructed/reconstructed_{i}_e{epoch}.wav', sampling_rate, audio)
+            model.eval()
+            print('Inference...\n')
+            with torch.no_grad():
+                mels = train_set.get_valid_dataset()
+                for i, (wav, mel, c) in enumerate(mels):
+                    if i >= test_size:
+                        break
+                    wav = wav.unsqueeze(0).float().cuda()
+                    mel = mel.unsqueeze(0).float().cuda()
+                    c = c.unsqueeze(0).float().cuda()
+                    mel_lengths = torch.LongTensor([mel.shape[-1]]).cuda()
+                    ppg, mel_rec = model(wav, mel, mel_lengths, mel, mel_lengths, c, n_timesteps=100)
+                    if epoch == save_every:
+                        save_plot(mel.squeeze().cpu(), f'{log_dir}/original/original_{i}.png')
+                        save_plot(ppg.squeeze().cpu(), f'{log_dir}/ppg/ppg_{i}.png')
+                        audio = fgl(mel)
+                        save_audio(f'{log_dir}/original/original_{i}.wav', sampling_rate, audio)
+                    save_plot(mel_rec.squeeze().cpu(), f'{log_dir}/reconstructed/reconstructed_{i}_e{epoch}.png')
+                    audio = fgl(mel_rec)
+                    save_audio(f'{log_dir}/reconstructed/reconstructed_{i}_e{epoch}.wav', sampling_rate, audio)
 
-        print('Saving model...\n')
-        encoder_exclude = model.module.encoder
-        model.module.encoder = None
-        ckpt = model.module.state_dict()
-        torch.save(ckpt, f=f"{log_dir}/vc_{epoch}.pt")
-        model.module.encoder = encoder_exclude
+            print('Saving model...\n')
+            encoder_exclude = model.module.encoder
+            model.module.encoder = None
+            ckpt = {
+                'state_dict': model.module.state_dict(), 
+                'optim': optimizer.state_dict(),
+            }
+            torch.save(ckpt, f=f"{log_dir}/vc_{epoch}.pt")
+            model.module.encoder = encoder_exclude
