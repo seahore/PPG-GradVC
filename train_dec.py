@@ -77,7 +77,7 @@ if __name__ == "__main__":
 
     print('Setting GPU devices...')
     local_rank = args.local_rank
-    torch.distributed.init_process_group(backend='nccl') # backend='gloo' for Windows
+    torch.distributed.init_process_group(backend='gloo') # backend='gloo' for Windows
     torch.cuda.set_device(local_rank)
     device = torch.device('cuda', local_rank)
 
@@ -110,11 +110,6 @@ if __name__ == "__main__":
     # print(model.decoder)
     # print('Number of parameters = %.2fm\n' % (model.decoder.nparams/1e6))
 
-    print('Initializing optimizers...')
-    optimizer = torch.optim.Adam(params=model.decoder.parameters(), lr=learning_rate)
-    if decoder_path is not None:
-        optimizer.load_state_dict(checkpt['optim'])
-
     print('Enabling multi-GPU training...')
     device_count = torch.cuda.device_count()
     print(f'Number of GPU devices: {device_count}')
@@ -122,6 +117,11 @@ if __name__ == "__main__":
     model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[local_rank],
                                                       output_device=local_rank,
                                                       find_unused_parameters=True)
+
+    print('Initializing optimizers...')
+    optimizer = torch.optim.Adam(params=model.module.decoder.parameters(), lr=learning_rate)
+    if decoder_path is not None:
+        optimizer.load_state_dict(checkpt['optim'])
 
     print('Start training.')
     torch.backends.cudnn.benchmark = True
