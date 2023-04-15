@@ -4,7 +4,7 @@ An any-to-many voice conversion model based on the architecture of [Grad-TTS](ht
 
 ## Training
 
-1. Prepare your multilingual corpora
+1. Prepare your multilingual corpora, then fill filelists (lines are formatted in `<wavfile_path>|<speaker_num>|`.)
 2. A pretrained HiFi-GAN vocoder is located at `./hifigan/g_00875000`, you can continue from it or train a new one.
 3. Extract PPGs
 
