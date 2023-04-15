@@ -1,4 +1,4 @@
-# Copyright (C) 2022. Huawei Technologies Co., Ltd. All rights reserved.
+# Copyright (C) 2021. Huawei Technologies Co., Ltd. All rights reserved.
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the MIT License.
 # This program is distributed in the hope that it will be useful,
@@ -16,6 +16,9 @@ class BaseModule(torch.nn.Module):
 
     @property
     def nparams(self):
+        """
+        Returns number of trainable parameters of the module.
+        """
         num_params = 0
         for name, param in self.named_parameters():
             if param.requires_grad:
@@ -24,6 +27,9 @@ class BaseModule(torch.nn.Module):
 
 
     def relocate_input(self, x: list):
+        """
+        Relocates provided tensors to the same device set for the module.
+        """
         device = next(self.parameters()).device
         for i in range(len(x)):
             if isinstance(x[i], torch.Tensor) and x[i].device != device:

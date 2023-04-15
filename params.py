@@ -1,4 +1,4 @@
-# Copyright (C) 2022. Huawei Technologies Co., Ltd. All rights reserved.
+# Copyright (C) 2021. Huawei Technologies Co., Ltd. All rights reserved.
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the MIT License.
 # This program is distributed in the hope that it will be useful,
@@ -6,31 +6,47 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 # MIT License for more details.
 
+from model.utils import fix_len_compatibility
+
+
 # data parameters
-n_mels = 80
-# sampling_rate = 22050
-sampling_rate = 16000
-n_fft = 1024
-hop_size = 160
+train_filelist_path = 'resources/filelists/genshin/train.txt'
+valid_filelist_path = 'resources/filelists/genshin/val.txt'
+test_filelist_path = 'resources/filelists/genshin/test.txt'
+n_feats = 80
+n_spks = 2
+spk_emb_dim = 64
+n_feats = 80
+n_fft = 1280
+sample_rate = 16000
+hop_length = 320
+win_length = 1280
+f_min = 0
+f_max = 8000
 
-# "average voice" encoder parameters
-channels = 192
-filters = 768
-layers = 6
-kernel = 3
-dropout = 0.1
-heads = 2
+# encoder parameters
+n_enc_channels = 192
+filter_channels = 768
+filter_channels_dp = 256
+n_enc_layers = 6
+enc_kernel = 3
+enc_dropout = 0.1
+n_heads = 2
 window_size = 4
-enc_dim = 128
 
-# diffusion-based decoder parameters
-dec_dim = 256
-spk_dim = 128
-use_ref_t = True
+# decoder parameters
+dec_dim = 64
 beta_min = 0.05
 beta_max = 20.0
+pe_scale = 1000  # 1 for `grad-tts-old.pt` checkpoint
 
 # training parameters
+log_dir = 'logs/vcexp1'
+test_size = 1
+n_epochs = 10000
+batch_size = 64
+learning_rate = 1e-4
 seed = 37
-test_size = 8
+save_every = 50
+out_size = fix_len_compatibility(2*16000//320)
 train_frames = 128
