@@ -1,4 +1,4 @@
-# PPG-Diff-VC
+# PPG-GradVC
 
 An any-to-many voice conversion model based on the architecture of [Grad-TTS](https://github.com/huawei-noah/Speech-Backbones/tree/main/Grad-TTS) and PPG from a [SSL-based phoneme recognizer](https://huggingface.co/facebook/wav2vec2-xlsr-53-espeak-cv-ft).
 
