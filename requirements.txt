@@ -7,3 +7,4 @@ tqdm
 transformers
 glob2
 tensorboard
+torch
