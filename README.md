@@ -3,7 +3,9 @@
 An any-to-many voice conversion model based on the architecture of [Grad-TTS](https://github.com/huawei-noah/Speech-Backbones/tree/main/Grad-TTS) and PPG from a [SSL-based phoneme recognizer](https://huggingface.co/facebook/wav2vec2-xlsr-53-espeak-cv-ft).
 
 ## Setup
-Using python>=3.6, python<=3.9, run
+Using python>=3.6, python<=3.9:
+- follow instructions under https://pytorch.org/get-started/locally/ to install Torch on your setup,
+- run
 ```
 pip install -r requirements.txt
 ```
