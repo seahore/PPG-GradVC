@@ -4,6 +4,6 @@ einops==0.3.0
 librosa==0.8.0
 scipy==1.5.4
 tqdm
-transformer
+transformers
 glob2
 tensorboard
